@@ -1,8 +1,8 @@
-from monkeyislang import use, PiecesOfEight, BottlesOfGrog, Scales
+from monkeyislang import use, PiecesOEight, BottlesOGrog, Scales
 
 def test_use_addition():
-    direct = PiecesOfEight(5)
-    indirect = PiecesOfEight(9)
+    direct = PiecesOEight(5)
+    indirect = PiecesOEight(9)
 
     use(direct, indirect, None)
 
@@ -10,8 +10,8 @@ def test_use_addition():
     assert indirect.pieces_o_eight == 0
 
 def test_use_subtraction():
-    direct = PiecesOfEight(9)
-    indirect = BottlesOfGrog(4)
+    direct = PiecesOEight(9)
+    indirect = BottlesOGrog(4)
 
     use(direct, indirect, None)
 
@@ -19,8 +19,8 @@ def test_use_subtraction():
     assert indirect.pieces_o_eight == 0
 
 def test_use_subtraction_negative():
-    direct = PiecesOfEight(9)
-    indirect = BottlesOfGrog(15)
+    direct = PiecesOEight(9)
+    indirect = BottlesOGrog(15)
 
     use(direct, indirect, None)
 
@@ -28,7 +28,7 @@ def test_use_subtraction_negative():
     assert indirect.pieces_o_eight == -6
 
 def test_scales():
-    direct = PiecesOfEight(7)
+    direct = PiecesOEight(7)
     scales = Scales()
 
     use(direct, scales, None)

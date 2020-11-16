@@ -154,8 +154,8 @@ class ProgramBlock:
             callers_inventory.remove(argument)
             new_inventory.append(AliasingWrapper(copy(unwrap(argument)), 'mysterious object'))
             new_inventory.append(AliasingWrapper(self, 'this'))
-            new_inventory.append(PiecesOfEight())
-            new_inventory.append(BottlesOfGrog())
+            new_inventory.append(PiecesOEight())
+            new_inventory.append(BottlesOGrog())
             new_inventory.append(Shovel())
 
         try:
@@ -249,7 +249,7 @@ class ChromaticTriplicator:
         inventory.append(ColorWrapper(copy(other), 'green'))
         inventory.append(ColorWrapper(copy(other), 'blue'))
 
-class PiecesOfEight:
+class PiecesOEight:
     name = "pieces o' eight"
 
     def __init__(self, count=1):
@@ -275,8 +275,8 @@ class PiecesOfEight:
             other.count = 0
         return None
 
-class BottlesOfGrog:
-    name = 'bottles of grog'
+class BottlesOGrog:
+    name = "bottles o' grog"
     def __init__(self, count=1):
         self.count = count
 
@@ -381,10 +381,10 @@ class VendingMachine:
         other.count -= 1
 
         try:
-            grog = inventory['bottles of grog']
+            grog = inventory["bottles o' grog"]
             grog.count += 1
         except KeyError:
-            inventory.append(BottlesOfGrog(1))
+            inventory.append(BottlesOGrog(1))
 
 def default_inventory():
     scene = Inventory([
@@ -398,8 +398,8 @@ def default_inventory():
     ])
 
     return Inventory([
-        PiecesOfEight(1),
-        BottlesOfGrog(1),
+        PiecesOEight(1),
+        BottlesOGrog(1),
     ], parent=scene)
 
 def program_reader(filehandle):
