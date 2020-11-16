@@ -1,5 +1,8 @@
 import sys
 from copy import copy
+import argparse
+import readline
+import traceback
 
 def look_at(direct_object, inventory):
     if hasattr(direct_object, 'look_at'):
@@ -362,24 +365,52 @@ def default_inventory():
     ], parent=scene)
 
 def program_reader(filehandle):
-    while True:
-        line = filehandle.readline()
-        if not line:
-            break
+    for line in filehandle:
         line = line.strip()
         if line.startswith('#') or not line:
             continue
         yield parse_line(line)
 
-def main():
+def exec_file(filename):
     inventory = default_inventory()
 
-    reader = program_reader(sys.stdin)
+    reader = program_reader(iter(open(filename)))
 
     for parsed in reader:
         # print(parsed)
         exec_command(parsed, inventory, reader)
-        # print()
+
+def repl_reader():
+    while True:
+        try:
+            yield input("mi> ")
+        except EOFError:
+            break
+
+def repl():
+    inventory = default_inventory()
+
+    while True:
+        reader = program_reader(repl_reader())
+
+        try:
+            for parsed in reader:
+                # print(parsed)
+                exec_command(parsed, inventory, reader)
+        except Exception:
+            traceback.print_exc()
+            continue
+        else:
+            break
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', help="Source file to execute", nargs='?')
+    args = parser.parse_args()
+    if args.file:
+        exec_file(args.file)
+    else:
+        repl()
 
 if __name__ == '__main__':
     main()
