@@ -177,8 +177,8 @@ class Wrapper:
         self.wrapped = wrapped
 
     @property
-    def pieces_of_eight(self):
-        return self.wrapped.pieces_of_eight
+    def pieces_o_eight(self):
+        return self.wrapped.pieces_o_eight
 
     def use(self, other, inventory):
         return self.wrapped.use(other, inventory)
@@ -239,12 +239,13 @@ class ChromaticTriplicator:
         inventory.append(ColorWrapper(copy(other), 'blue'))
 
 class PiecesOfEight:
-    name = 'pieces of eight'
+    name = "pieces o' eight"
+
     def __init__(self, count=1):
         self.count = count
 
     @property
-    def pieces_of_eight(self):
+    def pieces_o_eight(self):
         return self.count
 
     @property
@@ -252,10 +253,10 @@ class PiecesOfEight:
         return "%d %s" % (self.count, self.name)
 
     def use(self, other, inventory):
-        if not hasattr(other, 'pieces_of_eight'):
+        if not hasattr(other, 'pieces_o_eight'):
             return NotImplemented
 
-        self.count += other.pieces_of_eight
+        self.count += other.pieces_o_eight
         if self.count <= 0:
             other.count = -self.count
             self.count = 0
@@ -269,7 +270,7 @@ class BottlesOfGrog:
         self.count = count
 
     @property
-    def pieces_of_eight(self):
+    def pieces_o_eight(self):
         return -self.count
 
     @property
@@ -292,12 +293,12 @@ class Scales:
         self.truthy = False
 
     def use(self, other, inventory):
-        if not hasattr(other, 'pieces_of_eight'):
+        if not hasattr(other, 'pieces_o_eight'):
             return NotImplemented
 
-        self.truthy = other.pieces_of_eight != 0
+        self.truthy = other.pieces_o_eight != 0
         return None
-        # print("Comparison: ", self.truthy, other.pieces_of_eight, description(other))
+        # print("Comparison: ", self.truthy, other.pieces_o_eight, description(other))
 
     @property
     def description(self):
@@ -320,7 +321,7 @@ class MultiplyingContraption:
         self.factor = factor
 
     def use(self, other, inventory):
-        if not hasattr(other, 'pieces_of_eight'):
+        if not hasattr(other, 'pieces_o_eight'):
             return NotImplemented
         other.count *= self.factor
         return None
@@ -330,10 +331,10 @@ class NLicatorCreator:
 
     @staticmethod
     def use(other, inventory):
-        if not hasattr(other, 'pieces_of_eight'):
+        if not hasattr(other, 'pieces_o_eight'):
             return NotImplemented
 
-        inventory.append(MultiplyingContraption(other.pieces_of_eight))
+        inventory.append(MultiplyingContraption(other.pieces_o_eight))
         return None
 
 class ReturnValue(Exception):

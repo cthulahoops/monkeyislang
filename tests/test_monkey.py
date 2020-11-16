@@ -6,8 +6,8 @@ def test_use_addition():
 
     use(direct, indirect, None)
 
-    assert direct.pieces_of_eight == 14
-    assert indirect.pieces_of_eight == 0
+    assert direct.pieces_o_eight == 14
+    assert indirect.pieces_o_eight == 0
 
 def test_use_subtraction():
     direct = PiecesOfEight(9)
@@ -15,8 +15,8 @@ def test_use_subtraction():
 
     use(direct, indirect, None)
 
-    assert direct.pieces_of_eight == 5
-    assert indirect.pieces_of_eight == 0
+    assert direct.pieces_o_eight == 5
+    assert indirect.pieces_o_eight == 0
 
 def test_use_subtraction_negative():
     direct = PiecesOfEight(9)
@@ -24,8 +24,8 @@ def test_use_subtraction_negative():
 
     use(direct, indirect, None)
 
-    assert direct.pieces_of_eight == 0
-    assert indirect.pieces_of_eight == -6
+    assert direct.pieces_o_eight == 0
+    assert indirect.pieces_o_eight == -6
 
 def test_scales():
     direct = PiecesOfEight(7)
