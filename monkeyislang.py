@@ -16,21 +16,17 @@ def description(item):
     return item.name
 
 def use(direct_object, indirect_object, inventory):
-    try:
-        attr = direct_object.use
-    except AttributeError:
-        pass
-    else:
-        result = attr(indirect_object, inventory)
+    if hasattr(direct_object, 'use'):
+        result = direct_object.use(indirect_object, inventory)
         if result != NotImplemented:
             return result
 
-    try:
-        attr = indirect_object.use
-    except AttributeError:
-        raise ValueError("Can't use %s with %s" % (direct_object.name, indirect_object.name))
+    if hasattr(indirect_object, 'use'):
+        result = indirect_object.use(direct_object, inventory)
+        if result != NotImplemented:
+            return result
 
-    return attr(direct_object, inventory)
+    raise ValueError("Can't use %s with %s" % (direct_object.name, indirect_object.name))
 
 def push(direct_object):
     pass
@@ -245,7 +241,7 @@ class ChromaticTriplicator:
 class PiecesOfEight:
     name = 'pieces of eight'
     def __init__(self, count=1):
-        self.count = 1
+        self.count = count
 
     @property
     def pieces_of_eight(self):
@@ -270,7 +266,7 @@ class PiecesOfEight:
 class BottlesOfGrog:
     name = 'bottles of grog'
     def __init__(self, count=1):
-        self.count = 1
+        self.count = count
 
     @property
     def pieces_of_eight(self):
@@ -284,9 +280,9 @@ class DuplicatingContraption:
     name = 'duplicating contraption'
 
     def use(self, other, inventory):
-        try:
+        if hasattr(other, 'count'):
             other.count *= 2
-        except AttributeError:
+        else:
             raise ValueError("The %s doesn't fit in the %s" % (other.name, self.name))
 
 class Scales:
