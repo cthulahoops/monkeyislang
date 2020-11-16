@@ -1,0 +1,21 @@
+open add n creator
+	use mysterious object with chromatic triplicator
+
+	open add n
+		use mysterious object with red mysterious object
+		use shovel with mysterious object
+	close add n
+
+	use shovel with add n
+close add n creator
+
+use chromatic triplicator with pieces o' eight
+use duplicating contraption with red pieces o' eight
+
+# Make a +2 machine
+use root beer with red pieces o' eight
+use add n creator with pieces o' eight
+
+use add n with green pieces o' eight
+
+look at green pieces o' eight

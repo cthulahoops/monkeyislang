@@ -83,7 +83,7 @@ def parse_line(line):
 
 def exec_command(command, inventory, reader):
     if command['action'] == 'open':
-        direct_object = ProgramBlock(command['direct_object'], reader)
+        direct_object = ProgramBlock(command['direct_object'], inventory, reader)
         inventory.append(direct_object)
         return
 
@@ -121,8 +121,9 @@ class Inventory(list):
         return Inventory([], self)
 
 class ProgramBlock:
-    def __init__(self, name, reader):
+    def __init__(self, name, inventory, reader):
         self.name = name
+        self.inventory = inventory
         self.commands = []
         for item in reader:
             if item['action'] == 'close' and item['direct_object'] == name:
@@ -145,12 +146,12 @@ class ProgramBlock:
             # print(command)
             exec_command(command, inventory, reader)
 
-    def call(self, inventory, argument):
+    def call(self, callers_inventory, argument):
         # print("---> CALL: ", self.name, description(argument))
-        new_inventory = inventory.create_child()
+        new_inventory = self.inventory.create_child()
 
         if argument:
-            inventory.remove(argument)
+            callers_inventory.remove(argument)
             new_inventory.append(AliasingWrapper(copy(unwrap(argument)), 'mysterious object'))
             new_inventory.append(AliasingWrapper(self, 'this'))
             new_inventory.append(PiecesOfEight())
@@ -162,15 +163,19 @@ class ProgramBlock:
         except ReturnValue as return_value:
             return_value = return_value.args[0]
 
-            if hasattr(return_value, 'unwrap'):
-                return_value = return_value.unwrap()
+            return_value = unwrap(return_value)
 
             if hasattr(argument, 'replace'):
                 argument.replace(return_value)
                 return_value = argument
 
-            inventory.append(return_value)
+            # print("Returning: ", return_value, description(return_value), return_value.name)
+
+            callers_inventory.append(return_value)
             # print("<--- Returning from", self.name, description(return_value.args[0]))
+
+    def __repr__(self):
+        return f'<ProgramBlock {self.name!r}>'
 
 class Wrapper:
     def __init__(self, wrapped):
@@ -204,16 +209,22 @@ class Wrapper:
 
 class ColorWrapper(Wrapper):
     def __init__(self, wrapped, color):
-        self.name = '%s %s' % (color, wrapped.name)
         self.color = color
         super().__init__(wrapped)
 
     @property
+    def name(self):
+        return f'{self.color} {self.wrapped.name}'
+
+    @property
     def description(self):
-        return '%s %s' % (self.color, description(self.wrapped),)
+        return f'{self.color} {description(self.wrapped)}'
 
     def __copy__(self):
         return type(self)(copy(self.wrapped), self.color)
+
+    def __repr__(self):
+        return f'<ColorWraper {self.color} {self.wrapped!r}>'
 
 class AliasingWrapper(Wrapper):
     def __init__(self, wrapped, name):
@@ -286,6 +297,18 @@ class DuplicatingContraption:
         else:
             raise ValueError("The %s doesn't fit in the %s" % (other.name, self.name))
 
+class RootBeer:
+    name = 'root beer'
+
+    @staticmethod
+    def use(other, inventory):
+        if not hasattr(other, 'color'):
+            raise ValueError("I can't clean that with root beer.")
+
+        inventory.remove(other)
+        inventory.append(other.wrapped)
+
+
 class Scales:
     name = 'scales'
 
@@ -347,6 +370,22 @@ class Shovel:
     def use(other, inventory):
         raise ReturnValue(other)
 
+class VendingMachine:
+    name = 'vending machine'
+
+    @staticmethod
+    def use(other, inventory):
+        if not hasattr(other, 'pieces_o_eight') or other.pieces_o_eight == 0:
+            raise ValueError("Needs coins for the vending machine.")
+
+        other.count -= 1
+
+        try:
+            grog = inventory['bottles of grog']
+            grog.count += 1
+        except KeyError:
+            inventory.append(BottlesOfGrog(1))
+
 def default_inventory():
     scene = Inventory([
         ChromaticTriplicator(),
@@ -354,6 +393,8 @@ def default_inventory():
         Scales(),
         DishonestShopkeeper(),
         NLicatorCreator(),
+        RootBeer(),
+        VendingMachine(),
     ])
 
     return Inventory([
@@ -393,7 +434,12 @@ def repl():
         try:
             for parsed in reader:
                 # print(parsed)
-                exec_command(parsed, inventory, reader)
+                try:
+                    exec_command(parsed, inventory, reader)
+                except Exception:
+                    print("Error executing: ", parsed)
+                    traceback.print_exc()
+                    continue
         except Exception:
             traceback.print_exc()
             continue

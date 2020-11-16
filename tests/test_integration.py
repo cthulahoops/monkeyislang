@@ -10,6 +10,11 @@ def test_factorial(capfd):
     out, _err = capfd.readouterr()
     assert out == "It's a 8 pieces o' eight\nIt's a 40320 pieces o' eight\n"
 
+def test_closure(capfd):
+    exec_file("examples/closure.mi")
+    out, _err = capfd.readouterr()
+    assert out == "It's a green 3 pieces o' eight\n"
+
 def test_factorial(capfd):
     exec_file("examples/factorial.mi")
     out, _err = capfd.readouterr()
