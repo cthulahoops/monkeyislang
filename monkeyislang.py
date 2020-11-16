@@ -2,18 +2,15 @@ import sys
 from copy import copy
 
 def look_at(direct_object, inventory):
-    try:
-        attr = direct_object.look_at
-    except AttributeError:
-        print("It's a %s" % (description(direct_object),))
+    if hasattr(direct_object, 'look_at'):
+        print(direct_object.look_at())
     else:
-        print(attr())
+        print("It's a %s" % (description(direct_object),))
 
 def description(item):
-    try:
+    if hasattr(item, 'description'):
         return item.description
-    except AttributeError:
-        return item.name
+    return item.name
 
 def use(direct_object, indirect_object, inventory):
     try:
@@ -32,11 +29,13 @@ def use(direct_object, indirect_object, inventory):
 
     return attr(direct_object, inventory)
 
-
-
 def push(direct_object):
     pass
 
+def unwrap(item):
+    if hasattr(item, 'unwrap'):
+        return item.unwrap()
+    return item
 
 ACTIONS = {
     "open": None,
@@ -153,7 +152,7 @@ class ProgramBlock:
 
         if argument:
             inventory.remove(argument)
-            new_inventory.append(AliasingWrapper(argument, 'mysterious object'))
+            new_inventory.append(AliasingWrapper(copy(unwrap(argument)), 'mysterious object'))
             new_inventory.append(AliasingWrapper(self, 'this'))
             new_inventory.append(PiecesOfEight())
             new_inventory.append(BottlesOfGrog())
@@ -162,7 +161,10 @@ class ProgramBlock:
         try:
             self.execute(new_inventory)
         except ReturnValue as return_value:
-            return_value = return_value.args[0].unwrap()
+            return_value = return_value.args[0]
+
+            if hasattr(return_value, 'unwrap'):
+                return_value = return_value.unwrap()
 
             if hasattr(argument, 'replace'):
                 argument.replace(return_value)
@@ -207,6 +209,13 @@ class ColorWrapper(Wrapper):
         self.color = color
         super().__init__(wrapped)
 
+    @property
+    def description(self):
+        return '%s %s' % (self.color, description(self.wrapped),)
+
+    def __copy__(self):
+        return type(self)(copy(self.wrapped), self.color)
+
 class AliasingWrapper(Wrapper):
     def __init__(self, wrapped, name):
         self.name = name
@@ -216,6 +225,9 @@ class AliasingWrapper(Wrapper):
     @property
     def description(self):
         return '%s which appears to be %s' % (self.name, description(self.wrapped),)
+
+    def __copy__(self):
+        return type(self)(copy(self.wrapped), self.name)
 
 class ChromaticTriplicator:
     name = 'chromatic triplicator'
