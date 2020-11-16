@@ -83,7 +83,7 @@ def parse_line(line):
         'indirect_object': indirect_object,
     }
 
-def exec_command(command, inventory, location, reader):
+def exec_command(command, inventory, reader):
     if command['action'] == 'open':
         direct_object = ProgramBlock(command['direct_object'], reader)
         inventory.append(direct_object)
@@ -110,6 +110,10 @@ class Inventory(list):
         for item in self:
             if item.name == name:
                 return item
+
+        if self.parent:
+            return self.parent[name]
+
         raise KeyError("I can't see %r here" % (name,))
 
     def look_at(self):
@@ -128,23 +132,90 @@ class ProgramBlock:
             self.commands.append(item)
 
     def use(self, other, inventory):
-        try:
+        # print("Using block: ", self.name, description(other))
+        if hasattr(other, 'truthy'):
             if other.truthy:
                 self.execute(inventory)
-                return
-        except AttributeError:
-            pass
+        else:
+            self.call(inventory, argument=other)
 
-        self.execute(inventory, mysterious_object=other)
+    def execute(self, inventory):
+        # print("EXECUTE: ", self.name)
+        reader = iter(self.commands)
 
-    def execute(self, inventory, mysterious_object=None):
-        if mysterious_object:
-            inventory = inventory.create_child()
-            inventory.mysterious_object = mysterious_object
+        for command in reader:
+            # print(command)
+            exec_command(command, inventory, reader)
 
-        for command in self.commands:
-            print(command)
-            exec_command(command, inventory, {}, None)
+    def call(self, inventory, argument):
+        # print("---> CALL: ", self.name, description(argument))
+        new_inventory = inventory.create_child()
+
+        if argument:
+            inventory.remove(argument)
+            new_inventory.append(AliasingWrapper(argument, 'mysterious object'))
+            new_inventory.append(AliasingWrapper(self, 'this'))
+            new_inventory.append(PiecesOfEight())
+            new_inventory.append(BottlesOfGrog())
+            new_inventory.append(Shovel())
+
+        try:
+            self.execute(new_inventory)
+        except ReturnValue as return_value:
+            return_value = return_value.args[0].unwrap()
+
+            if hasattr(argument, 'replace'):
+                argument.replace(return_value)
+                return_value = argument
+
+            inventory.append(return_value)
+            # print("<--- Returning from", self.name, description(return_value.args[0]))
+
+class Wrapper:
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+
+    @property
+    def pieces_of_eight(self):
+        return self.wrapped.pieces_of_eight
+
+    def use(self, other, inventory):
+        return self.wrapped.use(other, inventory)
+
+    @property
+    def count(self):
+        return self.wrapped.count
+
+    @count.setter
+    def count(self, value):
+        self.wrapped.count = value
+
+    def unwrap(self):
+        if hasattr(self.wrapped, 'unwrap'):
+            return self.wrapped.unwrap()
+        return self.wrapped
+
+    def replace(self, replacement):
+        if hasattr(self.wrapped, 'replace'):
+            self.wrapped.replace(replacement)
+        else:
+            self.wrapped = replacement
+
+class ColorWrapper(Wrapper):
+    def __init__(self, wrapped, color):
+        self.name = '%s %s' % (color, wrapped.name)
+        self.color = color
+        super().__init__(wrapped)
+
+class AliasingWrapper(Wrapper):
+    def __init__(self, wrapped, name):
+        self.name = name
+        self.wrapped = wrapped
+        super().__init__(wrapped)
+
+    @property
+    def description(self):
+        return '%s which appears to be %s' % (self.name, description(self.wrapped),)
 
 class ChromaticTriplicator:
     name = 'chromatic triplicator'
@@ -152,21 +223,13 @@ class ChromaticTriplicator:
     @staticmethod
     def use(other, inventory):
         inventory.remove(other)
-        red_other = copy(other)
-        red_other.name = 'red %s' % (red_other.name,)
-        inventory.append(red_other)
-
-        green_other = copy(other)
-        green_other.name = 'green %s' % (green_other.name,)
-        inventory.append(green_other)
-
-        blue_other = copy(other)
-        blue_other.name = 'blue %s' % (blue_other.name,)
-        inventory.append(blue_other)
+        inventory.append(ColorWrapper(copy(other), 'red'))
+        inventory.append(ColorWrapper(copy(other), 'green'))
+        inventory.append(ColorWrapper(copy(other), 'blue'))
 
 class PiecesOfEight:
     name = 'pieces of eight'
-    def __init__(self, count):
+    def __init__(self, count=1):
         self.count = 1
 
     @property
@@ -178,20 +241,20 @@ class PiecesOfEight:
         return "%d %s" % (self.count, self.name)
 
     def use(self, other, inventory):
-        try:
-            self.count += other.pieces_of_eight
-        except AttributeError:
+        if not hasattr(other, 'pieces_of_eight'):
             return NotImplemented
+
+        self.count += other.pieces_of_eight
         if self.count <= 0:
             other.count = -self.count
             self.count = 0
         else:
             other.count = 0
-
+        return None
 
 class BottlesOfGrog:
     name = 'bottles of grog'
-    def __init__(self, count):
+    def __init__(self, count=1):
         self.count = 1
 
     @property
@@ -218,19 +281,73 @@ class Scales:
         self.truthy = False
 
     def use(self, other, inventory):
-        try:
-            self.truthy = other.pieces_of_eight != 0
-        except AttributeError:
+        if not hasattr(other, 'pieces_of_eight'):
             return NotImplemented
 
+        self.truthy = other.pieces_of_eight != 0
+        return None
+        # print("Comparison: ", self.truthy, other.pieces_of_eight, description(other))
+
+    @property
+    def description(self):
+        return "scales(%r)" % (self.truthy,)
+
+class DishonestShopkeeper:
+    name = 'dishonest shopkeeper'
+
+    @staticmethod
+    def use(other, inventory):
+        if not hasattr(other, 'truthy'):
+            return NotImplemented
+
+        other.truthy = not other.truthy
+        return None
+
+class MultiplyingContraption:
+    name = 'n-licator'
+    def __init__(self, factor):
+        self.factor = factor
+
+    def use(self, other, inventory):
+        if not hasattr(other, 'pieces_of_eight'):
+            return NotImplemented
+        other.count *= self.factor
+        return None
+
+class NLicatorCreator:
+    name = 'n-licator creator'
+
+    @staticmethod
+    def use(other, inventory):
+        if not hasattr(other, 'pieces_of_eight'):
+            return NotImplemented
+
+        inventory.append(MultiplyingContraption(other.pieces_of_eight))
+        return None
+
+class ReturnValue(Exception):
+    pass
+
+class Shovel:
+    name = 'shovel'
+
+    @staticmethod
+    def use(other, inventory):
+        raise ReturnValue(other)
+
 def default_inventory():
+    scene = Inventory([
+        ChromaticTriplicator(),
+        DuplicatingContraption(),
+        Scales(),
+        DishonestShopkeeper(),
+        NLicatorCreator(),
+    ])
+
     return Inventory([
         PiecesOfEight(1),
         BottlesOfGrog(1),
-        ChromaticTriplicator(),
-        DuplicatingContraption(),
-        Scales()
-    ])
+    ], parent=scene)
 
 def program_reader(filehandle):
     while True:
@@ -248,9 +365,9 @@ def main():
     reader = program_reader(sys.stdin)
 
     for parsed in reader:
-        print(parsed)
-        exec_command(parsed, inventory, {}, reader)
-        print()
+        # print(parsed)
+        exec_command(parsed, inventory, reader)
+        # print()
 
 if __name__ == '__main__':
     main()
