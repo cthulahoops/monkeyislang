@@ -1,6 +1,6 @@
 # MonkeyIslang
 
-A programming language based on the experience of old point and click advantures - specifically
+A programming language based on the experience of old point and click adventures - specifically
 Monkey Island. Program by combining random objects together and seeing what happens.
 
 Requires: Python 3.8
