@@ -153,7 +153,6 @@ class ProgramBlock:
         if argument:
             callers_inventory.remove(argument)
             new_inventory.append(AliasingWrapper(copy(unwrap(argument)), 'mysterious object'))
-            new_inventory.append(AliasingWrapper(self, 'this'))
             new_inventory.append(PiecesOEight())
             new_inventory.append(BottlesOGrog())
             new_inventory.append(Shovel())
